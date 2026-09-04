@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+cache/*
+!cache/.gitkeep
+logs/*
+!logs/.gitkeep
+.venv/
+venv/
+*.egg-info/
+node_modules/
+dist/
