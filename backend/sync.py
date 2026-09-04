@@ -27,14 +27,12 @@ def updateGroups():
 
 # Clear Data
 def dataClear():
-    return
     for name in os.listdir(path=f"cache/ProductsandPrices"):
         os.remove(path= f"cache/ProductsandPrices/{name}")
     return
 
 # Grab Data From TCGCSV.COM
 def dataGrab():
-    return
     os.makedirs("cache/ProductsandPrices", exist_ok=True)
     
     

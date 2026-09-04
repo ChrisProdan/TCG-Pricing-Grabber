@@ -1,9 +1,12 @@
 import json
-import os
 from flask import Flask
+import os
+from flask_cors import CORS
+import sync
+
 
 app = Flask(__name__)
-
+CORS(app)
 
 # Returns set ID from name, -1 if failure
 def getSet(setName):
@@ -18,14 +21,23 @@ def getSet(setName):
     return -1
 
 
-@app.route("/test")
-def hello_world():
-    return "Hello, World!"
-
+# Syncs Daily Pricing Data incase it is outdated
+def syncData():
+    try:
+        timeSinceSync  = os.path.getctime("cache/ProductsandPrices/604_Prices.json")
+        
+        if timeSinceSync >= 86400:
+            sync.dataGrab()
+    except:
+        sync.dataGrab()
+    
+    return
 
 # Returns Card imageUrl and Price given setName and cardName
 @app.route("/<path:setName>/<path:cardName>")        
 def getCardInfo(setName, cardName):
+    #syncData()
+    
     groupId = getSet(setName)
     
     if groupId == -1:
@@ -64,6 +76,7 @@ def getCardInfo(setName, cardName):
 
 
 def main():
+    return
     print(getCardInfo("ME05: Pitch Black","Mega Darkrai ex - 116/084"))
 
 
