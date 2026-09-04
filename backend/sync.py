@@ -19,7 +19,7 @@ def updateGroups():
     if r.status_code == 200:
         data = r.json()
             
-        with open(f"backend/cache/groups.json", 'w') as file:
+        with open(f"cache/groups.json", 'w') as file:
             json.dump(data,file)
     
     return
@@ -28,14 +28,14 @@ def updateGroups():
 # Clear Data
 def dataClear():
     return
-    for name in os.listdir(path=f"backend/cache/ProductsandPrices"):
-        os.remove(path= f"backend/cache/ProductsandPrices/{name}")
+    for name in os.listdir(path=f"cache/ProductsandPrices"):
+        os.remove(path= f"cache/ProductsandPrices/{name}")
     return
 
 # Grab Data From TCGCSV.COM
 def dataGrab():
     return
-    os.makedirs("backend/cache/ProductsandPrices", exist_ok=True)
+    os.makedirs("cache/ProductsandPrices", exist_ok=True)
     
     
     pokemon_category = '3'
@@ -45,7 +45,7 @@ def dataGrab():
     session.headers.update(({'User-Agent': 'PokemonPriceLookup/1.0.0'}))
     
     # Open Groups File to be looked Through
-    with open(f"backend/cache/groups.json") as file:
+    with open(f"cache/groups.json") as file:
         Groups = json.load(file)
         for Set in Groups["results"]:
             groupId = Set["groupId"]
@@ -55,7 +55,7 @@ def dataGrab():
             if r_Products.status_code == 200:
                 data = r_Products.json()
                         
-                with open(f"backend/cache/ProductsandPrices/{groupId}_Products.json", 'w') as file:
+                with open(f"cache/ProductsandPrices/{groupId}_Products.json", 'w') as file:
                     json.dump(data,file)
             else:
                 print(f"{groupId}_Products failed to be created")
@@ -65,7 +65,7 @@ def dataGrab():
             if r_Price.status_code == 200:
                 data = r_Price.json()
                         
-                with open(f"backend/cache/ProductsandPrices/{groupId}_Prices.json", 'w') as file:
+                with open(f"cache/ProductsandPrices/{groupId}_Prices.json", 'w') as file:
                     json.dump(data,file)  
             else:
                 print(f"{groupId}_Prices failed to be created")
@@ -78,12 +78,12 @@ def dataGrab():
     return
 
 def inventoryTest():
-    with open(f"backend/cache/groups.json") as file:
+    with open(f"cache/groups.json") as file:
         data = json.load(file)
         count = 0
         for x in data["results"]:
             groupId = x["groupId"]
-            if not os.path.exists(f"backend/cache/ProductsandPrices/{groupId}_Products.json"):
+            if not os.path.exists(f"cache/ProductsandPrices/{groupId}_Products.json"):
                 print(f"{groupId} Missing")
             else: 
                 count += 1

@@ -1,9 +1,13 @@
 import json
 import os
+from flask import Flask
+
+app = Flask(__name__)
+
 
 # Returns set ID from name, -1 if failure
 def getSet(setName):
-    with open("backend/cache/groups.json") as file:
+    with open("cache/groups.json") as file:
         file = json.load(file)
         
         for set in file["results"]:
@@ -13,7 +17,14 @@ def getSet(setName):
     
     return -1
 
-# Returns Card imageUrl and Price given setName and cardName        
+
+@app.route("/test")
+def hello_world():
+    return "Hello, World!"
+
+
+# Returns Card imageUrl and Price given setName and cardName
+@app.route("/<path:setName>/<path:cardName>")        
 def getCardInfo(setName, cardName):
     groupId = getSet(setName)
     
@@ -23,7 +34,7 @@ def getCardInfo(setName, cardName):
     cardId = -1
     imageUrl = None
     price = -1
-    with open(f"backend/cache/ProductsandPrices/{groupId}_Products.json") as file:
+    with open(f"cache/ProductsandPrices/{groupId}_Products.json") as file:
         file = json.load(file)
         
         for card in file["results"]:
@@ -34,14 +45,14 @@ def getCardInfo(setName, cardName):
     if cardId == -1:
         return -1
     
-    with open(f"backend/cache/ProductsandPrices/{groupId}_Prices.json") as file:
+    with open(f"cache/ProductsandPrices/{groupId}_Prices.json") as file:
             file = json.load(file)
             
             for card in file["results"]:
                 if card['productId'] == cardId:
                     price = card['marketPrice']
     
-    return [imageUrl,price]
+    return f"{imageUrl} {str(price)}"
     
                 
         
