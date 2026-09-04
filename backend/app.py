@@ -3,7 +3,8 @@ from flask import Flask
 import os
 from flask_cors import CORS
 import sync
-
+from flask import jsonify
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -24,7 +25,7 @@ def getSet(setName):
 # Syncs Daily Pricing Data incase it is outdated
 def syncData():
     try:
-        timeSinceSync  = os.path.getctime("cache/ProductsandPrices/604_Prices.json")
+        timeSinceSync  = time.time() - os.path.getctime("cache/ProductsandPrices/604_Prices.json")
         
         if timeSinceSync >= 86400:
             sync.dataGrab()
@@ -41,7 +42,7 @@ def getCardInfo(setName, cardName):
     groupId = getSet(setName)
     
     if groupId == -1:
-        return -1
+        return jsonify({"error": "not found"}), 404
     
     cardId = -1
     imageUrl = None
@@ -55,7 +56,7 @@ def getCardInfo(setName, cardName):
                 imageUrl = card['imageUrl']
         
     if cardId == -1:
-        return -1
+        return jsonify({"error": "not found"}), 404
     
     with open(f"cache/ProductsandPrices/{groupId}_Prices.json") as file:
             file = json.load(file)
