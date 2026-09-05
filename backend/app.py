@@ -2,9 +2,10 @@ import json
 from flask import Flask
 import os
 from flask_cors import CORS
-import sync
 from flask import jsonify
 import time
+
+import sync
 
 app = Flask(__name__)
 CORS(app)
@@ -65,7 +66,7 @@ def getCardInfo(setName, cardName):
                 if card['productId'] == cardId:
                     price = card['marketPrice']
     
-    return f"{imageUrl} {str(price)}"
+    return jsonify([imageUrl, str(price)])
     
                 
         
