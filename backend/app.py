@@ -2,10 +2,10 @@ import json
 from flask import Flask
 import os
 from flask_cors import CORS
-from flask import jsonify
+from flask import jsonify 
 import time
-
 import sync
+import psycopg
 
 app = Flask(__name__)
 CORS(app)
