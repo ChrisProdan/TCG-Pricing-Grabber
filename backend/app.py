@@ -1,80 +1,75 @@
-import json
-from flask import Flask
 import os
+from flask import Flask
 from flask_cors import CORS
 from flask import jsonify 
-import time
-import sync
 import psycopg
+
+from dotenv import load_dotenv
+
+load_dotenv()
+password = os.environ.get("DB_PASSWORD")
 
 app = Flask(__name__)
 CORS(app)
 
 # Returns set ID from name, -1 if failure
 def getSet(setName):
-    with open("cache/groups.json") as file:
-        file = json.load(file)
-        
-        for set in file["results"]:
-            if set['name'] == setName:
-                return set['groupId']
-        
     
-    return -1
-
-
-# Syncs Daily Pricing Data incase it is outdated
-def syncData():
-    try:
-        timeSinceSync  = time.time() - os.path.getctime("cache/ProductsandPrices/604_Prices.json")
-        
-        if timeSinceSync >= 86400:
-            sync.dataGrab()
-    except:
-        sync.dataGrab()
-    
-    return
+    with psycopg.connect(dbname="Pokemon_Pricing_Information",
+                                         user="postgres",
+                                         password=password,
+                                         port=5432,
+                                         host="localhost",
+                                         autocommit=True) as conn:
+                        
+                with conn.cursor() as cur:
+                    try:
+                        cur.execute(
+                            t"SELECT groupid FROM groupdata WHERE setname={setName}"
+                        )
+                        
+                        retval = cur.fetchone()
+                        if retval is None:
+                            return -1
+                        return retval[0]
+                        
+                    except psycopg.Error as e:
+                        return -1
 
 # Returns Card imageUrl and Price given setName and cardName
 @app.route("/<path:setName>/<path:cardName>")        
 def getCardInfo(setName, cardName):
-    #syncData()
-    
     groupId = getSet(setName)
     
     if groupId == -1:
         return jsonify({"error": "not found"}), 404
     
-    cardId = -1
-    imageUrl = None
-    price = -1
-    with open(f"cache/ProductsandPrices/{groupId}_Products.json") as file:
-        file = json.load(file)
-        
-        for card in file["results"]:
-            if card['name'] == cardName:
-                cardId = card['productId']
-                imageUrl = card['imageUrl']
-        
-    if cardId == -1:
-        return jsonify({"error": "not found"}), 404
+    with psycopg.connect(dbname="Pokemon_Pricing_Information",
+                                             user="postgres",
+                                             password=password,
+                                             port=5432,
+                                             host="localhost",
+                                             autocommit=True) as conn:
+                            
+                    with conn.cursor() as cur:
+                        try:
+                            cur.execute(
+                                t"SELECT imageurl, price FROM carddata WHERE groupid={groupId} AND cardname={cardName}"
+                            )
+                            
+                            r = cur.fetchone()  
+                            if r is None:
+                                return jsonify({"error": "not found"}), 404                                                 
+                            retval = jsonify({"imageUrl":r[0],"price":r[1]})
+                            
+                            return retval
+                            
+                        except psycopg.Error as e:
+                            return jsonify({"error": "not found"}), 404
     
-    with open(f"cache/ProductsandPrices/{groupId}_Prices.json") as file:
-            file = json.load(file)
-            
-            for card in file["results"]:
-                if card['productId'] == cardId:
-                    price = card['marketPrice']
-    
-    return jsonify([imageUrl, str(price)])
-    
-                
-        
-        
-
     
 
-
+    
 
 
 def main():
