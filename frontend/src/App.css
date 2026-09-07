@@ -1,0 +1,119 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.lookup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+  margin-top: 1.5rem;
+}
+
+.lookup-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lookup-form input {
+  font-size: 1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.lookup-form button {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #2a6fdb;
+  color: white;
+  cursor: pointer;
+}
+
+.lookup-form button:disabled {
+  background-color: #a9a9a9;
+  cursor: not-allowed;
+}
+
+.result-area {
+  margin-top: 2rem;
+  min-height: 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.no-match {
+  color: #b3261e;
+}
+
+.card-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Animated "moving dots" loading indicator: three dots that each pulse in
+   size/opacity, offset from each other via negative animation-delay so
+   the pulse visibly travels across the row instead of all three moving
+   in lockstep. */
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #2a6fdb;
+  animation: dot-pulse 1.4s ease-in-out infinite both;
+}
+
+.dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes dot-pulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

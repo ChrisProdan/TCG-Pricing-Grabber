@@ -12,7 +12,7 @@ password = os.environ.get("DB_PASSWORD")
 app = Flask(__name__)
 CORS(app)
 
-# Returns set ID from name, -1 if failure
+#Returns set ID from name, -1 if failure
 def getSet(setName):
     
     with psycopg.connect(dbname="Pokemon_Pricing_Information",
@@ -74,8 +74,9 @@ def getCardInfo(setName, cardName):
 
 def main():
     return
-    print(getCardInfo("ME05: Pitch Black","Mega Darkrai ex - 116/084"))
+
 
 
 if __name__ == "__main__":
-    main()
+    # Starts the server instantly when the script is run directly
+    app.run()
