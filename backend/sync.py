@@ -2,6 +2,8 @@ import os
 import requests
 import time
 import psycopg
+import dp
+import config
 
 from dotenv import load_dotenv
 
@@ -30,12 +32,7 @@ def updateGroups():
             print(f"Groups request failed: {e}")
 
     
-    with psycopg.connect(dbname="Pokemon_Pricing_Information",
-                         user="postgres",
-                         password=password,
-                         port=5432,
-                         host="localhost",
-                         autocommit=True) as conn:
+    with dp.get_connection(config.load_settings) as conn:
         
         with conn.cursor() as cur:
             
@@ -47,6 +44,74 @@ def updateGroups():
             
     return
 
+# Returns a list of all Sets
+def getAllSets(conn: psycopg.Connection):
+    with conn.cursor() as cur:
+                            
+        try:               
+            cur.execute(
+                "SELECT groupid FROM groupdata"
+            )
+            return cur.fetchall()
+        except psycopg.Error as e:
+            print(f"Error: {e}")
+
+def getProductData(session, groupId):
+    pokemon_category = '3'
+    try:
+        r_Products = session.get(f"https://tcgcsv.com/tcgplayer/{pokemon_category}/{groupId}/products")
+        if r_Products.status_code == 200:
+            data = r_Products.json()
+            return data["results"]
+        else:
+            print(f"{groupId}_Products failed to be created")
+            return []
+    
+    except requests.exceptions.RequestException as e:
+        print(f"{groupId}_Products request failed: {e}")
+
+def getPriceData(session,groupId):
+    pokemon_category = '3'
+    try:
+        r_Prices = session.get(f"https://tcgcsv.com/tcgplayer/{pokemon_category}/{groupId}/prices")
+        if r_Prices.status_code == 200:
+            data = r_Prices.json()
+            return data["results"]
+        else:
+            print(f"{groupId}_Prices failed to be created")
+            return []
+    
+    except requests.exceptions.RequestException as e:
+        print(f"{groupId}_Products request failed: {e}")    
+        
+        
+def filterPriceData(setPriceData):
+    filteredPriceData = dict()
+    for product in setPriceData:
+        if product["productId"] in filteredPriceData:
+            
+            if product["marketPrice"] is not None:
+                if filteredPriceData[product["productId"]] is None or product["marketPrice"] < filteredPriceData[product["productId"]]:
+                    filteredPriceData[product["productId"]] = product["marketPrice"]
+        else:
+            filteredPriceData[product["productId"]] = product["marketPrice"]
+    
+    return filteredPriceData
+
+def updateProduct(conn,product):
+    with conn.cursor as cur:
+        
+        cur.execute(
+            t"INSERT INTO carddata (productid, cardname, imageurl, groupid) VALUES ({product["productId"]},{product["name"]},{product["imageUrl"]},{product["groupId"]}) ON CONFLICT (productid) DO NOTHING"
+        )
+        
+        #Update Rarity If it exists
+        for extendedData in product.get("extendedData", []):
+            if extendedData["name"] == "Rarity":
+                cur.execute(
+                    t"UPDATE carddata SET rarity = {extendedData["value"]} WHERE productid = {product["productId"]}"
+                ) 
+                break  
 
 
 # Update Card Data to Postgres
@@ -61,20 +126,11 @@ def updateCards():
         
         groupIDs = [()]
         # Link to 
-        with psycopg.connect(dbname="Pokemon_Pricing_Information",
-                                     user="postgres",
-                                     password=password,
-                                     port=5432,
-                                     host="localhost",
-                                     autocommit=True) as conn:
+        with dp.get_connection(config.load_settings) as conn:
                     
             with conn.cursor() as cur:
                         
-                   
-                cur.execute(
-                    "SELECT groupid FROM groupdata"
-                )
-                groupIDs = cur.fetchall()
+                groupIDs = getAllSets(conn)
 
                 #Parse through all the sets grabbed from Postgres
                 for Set in groupIDs:
@@ -84,54 +140,31 @@ def updateCards():
                     # Grab products Json for this group from TCGCSV.com
                     setProductData = []
                     try:
-                        r_Products = session.get(f"https://tcgcsv.com/tcgplayer/{pokemon_category}/{groupId}/products")
-                        if r_Products.status_code == 200:
-                            data = r_Products.json()
-                            setProductData = data["results"]
+                        setProductData = getProductData(session,groupId)
                         
-                            #Parse through Products for new set and insert into Postgres
-                            for product in setProductData:
-                                
-                                cur.execute(
-                                    t"INSERT INTO carddata (productid, cardname, imageurl, groupid) VALUES ({product["productId"]},{product["name"]},{product["imageUrl"]},{product["groupId"]}) ON CONFLICT (productid) DO NOTHING"
-                                )                                
+                        #Parse through Products for new set and insert into Postgres
+                        for product in setProductData:
+                            
+                            updateProduct(conn,product)                            
 
-                        else:
-                            print(f"{groupId}_Products failed to be created")
                             
                     except requests.exceptions.RequestException as e:
                         print(f"{groupId}_Products request failed: {e}")
-                
-                
+                                
                     
                     # Grab price Json for this group
                     setPriceData = []
                     try:
-                        r_Price = session.get(f"https://tcgcsv.com/tcgplayer/{pokemon_category}/{groupId}/prices")
-                        if r_Price.status_code == 200:
-                            data = r_Price.json()
-                            setPriceData = data["results"]
+                        setPriceData = getPriceData(session,groupId)
                         
-                            #Filtered Pricing Data to Remove Duplicates
-                            filteredPriceData = dict()
-                            for product in setPriceData:
-                                if product["productId"] in filteredPriceData:
-                                    
-                                    if product["marketPrice"] is not None:
-                                        if filteredPriceData[product["productId"]] is None or product["marketPrice"] < filteredPriceData[product["productId"]]:
-                                            filteredPriceData[product["productId"]] = product["marketPrice"]
-                                else:
-                                    filteredPriceData[product["productId"]] = product["marketPrice"]
 
-                            
-                            #Parse through Pricing Data to update prices
-                            for productid, price in filteredPriceData.items():                        
-                                cur.execute(
-                                    t"UPDATE carddata SET price = {price} WHERE productid = {productid}"
-                                )     
-
-                        else:
-                            print(f"{groupId}_Prices failed to be created")
+                        filteredPriceData = filteredPriceData(setPriceData)
+                        
+                        #Parse through Pricing Data to update prices
+                        for productid, price in filteredPriceData.items():                        
+                            cur.execute(
+                                t"UPDATE carddata SET price = {price} WHERE productid = {productid}"
+                            )     
                             
                     except requests.exceptions.RequestException as e:
                         print(f"{groupId}_Prices request failed: {e}")
